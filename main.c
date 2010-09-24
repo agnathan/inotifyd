@@ -168,6 +168,31 @@ char * find_path_name(struct file_list *list, int wd)
   return "\0";
 }
 
+void exec_event(struct inotify_event *pevent, char *action) {
+    int status;
+    pid_t pid;
+
+    pid = fork();
+    if (pid == -1) { 
+	/* fork error - cannot create child */
+	perror("fork error - cannot create child");
+	exit(1);
+	}
+    else if (pid == 0) {
+        /* code for child */
+	/* probably a few statements then an execvp() */ 
+        syslog (LOG_INFO, "execing cp %s %s_copy", action, action);
+        execl("/bin/cp", action, "copy", (char *)0);
+
+	_exit(1);  /* the execvp() failed - a failed child
+                      should not flush parent files */
+	}
+    else { /* code for parent */ 
+        /* printf("Pid of latest child is %d\n", pid); */
+            /* more code */
+        syslog (LOG_INFO, "Healthy parent");
+    }
+  }
 
 void log_event(struct inotify_event *pevent, char *action) {
 
@@ -229,9 +254,9 @@ void listen(struct file_list *list)
 
     free(pathname);
 
-    if (LOGEVENT) {
-      log_event(pevent, action);
-    }
+     /* log_event(pevent, action);  */
+     exec_event(pevent, action);
+   
 
     i += sizeof(struct inotify_event) + pevent->len;
     
@@ -267,7 +292,7 @@ int main(int argc, char *argv[]) {
     signal(SIGQUIT, signal_handler);
  
     int c;
-    while( (c = getopt(argc, argv, "nh|help")) != -1) {
+    while( (c = getopt(argc, argv, "neh|helpi|exec")) != -1) {
         switch(c){
             case 'h':
                 PrintUsage(argc, argv);
@@ -276,6 +301,8 @@ int main(int argc, char *argv[]) {
             case 'n':
                 daemonize = 0;
                 break;
+	    case 'e':
+		break;
             default:
                 PrintUsage(argc, argv);
                 exit(0);
@@ -354,3 +381,24 @@ int main(int argc, char *argv[]) {
 }
 
 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
